@@ -127,35 +127,26 @@ func odrContractCall(ctx context.Context, db ethdb.Database, config *params.Chai
 			if err == nil {
 				from := statedb.GetOrNewStateObject(testBankAddress)
 				from.SetBalance(math.MaxBig256)
-				feeCapacity := state.GetTRC21FeeCapacityFromState(statedb)
-				var balanceTokenFee *big.Int
-				if value, ok := feeCapacity[testContractAddr]; ok {
-					balanceTokenFee = value
-				}
-				msg := callmsg{types.NewMessage(from.Address(), &testContractAddr, 0, new(big.Int), 100000, new(big.Int), data, false, balanceTokenFee)}
-
+				msg := callmsg{types.NewMessage(from.Address(), &testContractAddr, 0, new(big.Int), 100000, data, false)}
 				context := core.NewEVMContext(msg, header, bc, nil)
 				vmenv := vm.NewEVM(context, statedb, config, vm.Config{})
 
 				//vmenv := core.NewEnv(statedb, config, bc, msg, header, vm.Config{})
 				gp := new(core.GasPool).AddGas(math.MaxUint64)
-				ret, _, _, _ := core.ApplyMessage(vmenv, msg, gp)
+				owner := common.Address{}
+				ret, _, _, _ := core.ApplyMessage(vmenv, msg, gp, owner)
 				res = append(res, ret...)
 			}
 		} else {
 			header := lc.GetHeaderByHash(bhash)
 			statedb := light.NewState(ctx, header, lc.Odr())
 			statedb.SetBalance(testBankAddress, math.MaxBig256)
-			feeCapacity := state.GetTRC21FeeCapacityFromState(statedb)
-			var balanceTokenFee *big.Int
-			if value, ok := feeCapacity[testContractAddr]; ok {
-				balanceTokenFee = value
-			}
-			msg := callmsg{types.NewMessage(testBankAddress, &testContractAddr, 0, new(big.Int), 100000, new(big.Int), data, false, balanceTokenFee)}
+			msg := callmsg{types.NewMessage(testBankAddress, &testContractAddr, 0, new(big.Int), 100000, data, false)}
 			context := core.NewEVMContext(msg, header, lc, nil)
 			vmenv := vm.NewEVM(context, statedb, config, vm.Config{})
 			gp := new(core.GasPool).AddGas(math.MaxUint64)
-			ret, _, _, _ := core.ApplyMessage(vmenv, msg, gp)
+			owner := common.Address{}
+			ret, _, _, _ := core.ApplyMessage(vmenv, msg, gp, owner)
 			if statedb.Error() == nil {
 				res = append(res, ret...)
 			}

@@ -17,6 +17,9 @@
 package core
 
 import (
+	"runtime"
+	"sync"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/consensus/misc"
@@ -25,12 +28,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
-	"math/big"
-)
-import (
-	"fmt"
-	"runtime"
-	"sync"
 )
 
 // StateProcessor is a basic Processor, which takes care of transitioning
@@ -63,7 +60,7 @@ func NewStateProcessor(config *params.ChainConfig, bc *BlockChain, engine consen
 // Process returns the receipts and logs accumulated during the process and
 // returns the amount of gas that was used in the process. If any of the
 // transactions failed to execute due to insufficient gas it will return an error.
-func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg vm.Config, balanceFee map[common.Address]*big.Int) (types.Receipts, []*types.Log, uint64, error) {
+func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg vm.Config) (types.Receipts, []*types.Log, uint64, error) {
 	var (
 		receipts types.Receipts
 		usedGas  = new(uint64)
@@ -79,40 +76,21 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 		statedb.DeleteAddress(common.HexToAddress(common.BlockSigners))
 	}
 	InitSignerInTransactions(p.config, header, block.Transactions())
-	balanceUpdated := map[common.Address]*big.Int{}
-	totalFeeUsed := uint64(0)
 	for i, tx := range block.Transactions() {
-		// check black-list txs after hf
-		if (block.Number().Uint64() >= common.BlackListHFNumber) && !common.IsTestnet {
-			// check if sender is in black list
-			if tx.From() != nil && common.Blacklist[*tx.From()] {
-				return nil, nil, 0, fmt.Errorf("Block contains transaction with sender in black-list: %v", tx.From().Hex())
-			}
-			// check if receiver is in black list
-			if tx.To() != nil && common.Blacklist[*tx.To()] {
-				return nil, nil, 0, fmt.Errorf("Block contains transaction with receiver in black-list: %v", tx.To().Hex())
-			}
-		}
 		statedb.Prepare(tx.Hash(), block.Hash(), i)
-		receipt, gas, err, tokenFeeUsed := ApplyTransaction(p.config, balanceFee, p.bc, nil, gp, statedb, header, tx, usedGas, cfg)
+		receipt, _, err := ApplyTransaction(p.config, p.bc, nil, gp, statedb, header, tx, usedGas, cfg)
 		if err != nil {
 			return nil, nil, 0, err
 		}
 		receipts = append(receipts, receipt)
 		allLogs = append(allLogs, receipt.Logs...)
-		if tokenFeeUsed {
-			balanceFee[*tx.To()] = new(big.Int).Sub(balanceFee[*tx.To()], new(big.Int).SetUint64(gas))
-			balanceUpdated[*tx.To()] = balanceFee[*tx.To()]
-			totalFeeUsed = totalFeeUsed + gas
-		}
 	}
-	state.UpdateTRC21Fee(statedb, balanceUpdated, totalFeeUsed)
 	// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
 	p.engine.Finalize(p.bc, header, statedb, block.Transactions(), block.Uncles(), receipts)
 	return receipts, allLogs, *usedGas, nil
 }
 
-func (p *StateProcessor) ProcessBlockNoValidator(cBlock *CalculatedBlock, statedb *state.StateDB, cfg vm.Config, balanceFee map[common.Address]*big.Int) (types.Receipts, []*types.Log, uint64, error) {
+func (p *StateProcessor) ProcessBlockNoValidator(cBlock *CalculatedBlock, statedb *state.StateDB, cfg vm.Config) (types.Receipts, []*types.Log, uint64, error) {
 	block := cBlock.block
 	var (
 		receipts types.Receipts
@@ -132,28 +110,14 @@ func (p *StateProcessor) ProcessBlockNoValidator(cBlock *CalculatedBlock, stated
 		return nil, nil, 0, ErrStopPreparingBlock
 	}
 	InitSignerInTransactions(p.config, header, block.Transactions())
-	balanceUpdated := map[common.Address]*big.Int{}
-	totalFeeUsed := uint64(0)
-
 	if cBlock.stop {
 		return nil, nil, 0, ErrStopPreparingBlock
 	}
 	// Iterate over and process the individual transactions
 	receipts = make([]*types.Receipt, block.Transactions().Len())
 	for i, tx := range block.Transactions() {
-		// check black-list txs after hf
-		if (block.Number().Uint64() >= common.BlackListHFNumber) && !common.IsTestnet {
-			// check if sender is in black list
-			if tx.From() != nil && common.Blacklist[*tx.From()] {
-				return nil, nil, 0, fmt.Errorf("Block contains transaction with sender in black-list: %v", tx.From().Hex())
-			}
-			// check if receiver is in black list
-			if tx.To() != nil && common.Blacklist[*tx.To()] {
-				return nil, nil, 0, fmt.Errorf("Block contains transaction with receiver in black-list: %v", tx.To().Hex())
-			}
-		}
 		statedb.Prepare(tx.Hash(), block.Hash(), i)
-		receipt, gas, err, tokenFeeUsed := ApplyTransaction(p.config, balanceFee, p.bc, nil, gp, statedb, header, tx, usedGas, cfg)
+		receipt, _, err := ApplyTransaction(p.config, p.bc, nil, gp, statedb, header, tx, usedGas, cfg)
 		if err != nil {
 			return nil, nil, 0, err
 		}
@@ -162,13 +126,7 @@ func (p *StateProcessor) ProcessBlockNoValidator(cBlock *CalculatedBlock, stated
 		}
 		receipts[i] = receipt
 		allLogs = append(allLogs, receipt.Logs...)
-		if tokenFeeUsed {
-			balanceFee[*tx.To()] = new(big.Int).Sub(balanceFee[*tx.To()], new(big.Int).SetUint64(gas))
-			balanceUpdated[*tx.To()] = balanceFee[*tx.To()]
-			totalFeeUsed = totalFeeUsed + gas
-		}
 	}
-	state.UpdateTRC21Fee(statedb, balanceUpdated, totalFeeUsed)
 	// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
 	p.engine.Finalize(p.bc, header, statedb, block.Transactions(), block.Uncles(), receipts)
 	return receipts, allLogs, *usedGas, nil
@@ -178,29 +136,36 @@ func (p *StateProcessor) ProcessBlockNoValidator(cBlock *CalculatedBlock, stated
 // and uses the input parameters for its environment. It returns the receipt
 // for the transaction, gas used and an error if the transaction failed,
 // indicating the block was invalid.
-func ApplyTransaction(config *params.ChainConfig, tokensFee map[common.Address]*big.Int, bc *BlockChain, author *common.Address, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config) (*types.Receipt, uint64, error, bool) {
+func ApplyTransaction(config *params.ChainConfig, bc *BlockChain, author *common.Address, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config) (*types.Receipt, uint64, error) {
 	if tx.To() != nil && tx.To().String() == common.BlockSigners && config.IsTIPSigning(header.Number) {
 		return ApplySignTransaction(config, statedb, header, tx, usedGas)
 	}
-	var balanceFee *big.Int
-	if tx.To() != nil {
-		if value, ok := tokensFee[*tx.To()]; ok {
-			balanceFee = value
-		}
+	if tx.To() != nil && tx.To().String() == common.SMCUpgradeAddr {
+		return ApplySMCUpgradeTransaction(config, statedb, header, tx, usedGas)
 	}
-	msg, err := tx.AsMessage(types.MakeSigner(config, header.Number), balanceFee)
+	msg, err := tx.AsMessage(types.MakeSigner(config, header.Number), header.Number)
 	if err != nil {
-		return nil, 0, err, false
+		return nil, 0, err
 	}
 	// Create a new context to be used in the EVM environment
 	context := NewEVMContext(msg, header, bc, author)
 	// Create a new environment which holds all relevant information
 	// about the transaction and calling mechanisms.
 	vmenv := vm.NewEVM(context, statedb, config, cfg)
+
+	// If we don't have an explicit author (i.e. not mining), extract from the header
+	var beneficiary common.Address
+	if author == nil {
+		beneficiary, _ = bc.Engine().Author(header) // Ignore error, we're past header validation
+	} else {
+		beneficiary = *author
+	}
+
+	coinbaseOwner := statedb.GetOwner(beneficiary)
 	// Apply the transaction to the current state (included in the env)
-	_, gas, failed, err := ApplyMessage(vmenv, msg, gp)
+	_, gas, failed, err := ApplyMessage(vmenv, msg, gp, coinbaseOwner)
 	if err != nil {
-		return nil, 0, err, false
+		return nil, 0, err
 	}
 	// Update the state with pending changes
 	var root []byte
@@ -223,13 +188,11 @@ func ApplyTransaction(config *params.ChainConfig, tokensFee map[common.Address]*
 	// Set the receipt logs and create a bloom for filtering
 	receipt.Logs = statedb.GetLogs(tx.Hash())
 	receipt.Bloom = types.CreateBloom(types.Receipts{receipt})
-	if balanceFee != nil && failed {
-		state.PayFeeWithTRC21TxFail(statedb, msg.From(), *tx.To())
-	}
-	return receipt, gas, err, balanceFee != nil
+
+	return receipt, gas, err
 }
 
-func ApplySignTransaction(config *params.ChainConfig, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64) (*types.Receipt, uint64, error, bool) {
+func ApplySignTransaction(config *params.ChainConfig, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64) (*types.Receipt, uint64, error) {
 	// Update the state with pending changes
 	var root []byte
 	if config.IsByzantium(header.Number) {
@@ -239,13 +202,13 @@ func ApplySignTransaction(config *params.ChainConfig, statedb *state.StateDB, he
 	}
 	from, err := types.Sender(types.MakeSigner(config, header.Number), tx)
 	if err != nil {
-		return nil, 0, err, false
+		return nil, 0, err
 	}
 	nonce := statedb.GetNonce(from)
 	if nonce < tx.Nonce() {
-		return nil, 0, ErrNonceTooHigh, false
+		return nil, 0, ErrNonceTooHigh
 	} else if nonce > tx.Nonce() {
-		return nil, 0, ErrNonceTooLow, false
+		return nil, 0, ErrNonceTooLow
 	}
 	statedb.SetNonce(from, nonce+1)
 	// Create a new receipt for the transaction, storing the intermediate root and gas used by the tx
@@ -261,7 +224,50 @@ func ApplySignTransaction(config *params.ChainConfig, statedb *state.StateDB, he
 	statedb.AddLog(log)
 	receipt.Logs = statedb.GetLogs(tx.Hash())
 	receipt.Bloom = types.CreateBloom(types.Receipts{receipt})
-	return receipt, 0, nil, false
+	return receipt, 0, nil
+}
+
+func ApplySMCUpgradeTransaction(config *params.ChainConfig, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64) (*types.Receipt, uint64, error) {
+	// Update the state with pending changes
+	var root []byte
+	if config.IsByzantium(header.Number) {
+		statedb.Finalise(true)
+	} else {
+		root = statedb.IntermediateRoot(config.IsEIP158(header.Number)).Bytes()
+	}
+	from, err := types.Sender(types.MakeSigner(config, header.Number), tx)
+	if err != nil {
+		return nil, 0, err
+	}
+	nonce := statedb.GetNonce(from)
+	if nonce < tx.Nonce() {
+		return nil, 0, ErrNonceTooHigh
+	} else if nonce > tx.Nonce() {
+		return nil, 0, ErrNonceTooLow
+	}
+	if len(tx.Data()) > common.AddressLength {
+		smcUpgradeAddr := common.BytesToAddress(tx.Data()[:common.AddressLength])
+		owner := statedb.GetOwnerSMC(smcUpgradeAddr)
+		if !common.EmptyHash(owner.Hash()) && owner == from {
+			smcNewCode := tx.Data()[common.AddressLength:]
+			statedb.SetCode(smcUpgradeAddr, smcNewCode)
+		}
+	}
+	statedb.SetNonce(from, nonce+1)
+	// Create a new receipt for the transaction, storing the intermediate root and gas used by the tx
+	// based on the eip phase, we're passing wether the root touch-delete accounts.
+	receipt := types.NewReceipt(root, false, *usedGas)
+	receipt.TxHash = tx.Hash()
+	receipt.GasUsed = 0
+	// if the transaction created a contract, store the creation address in the receipt.
+	// Set the receipt logs and create a bloom for filtering
+	log := &types.Log{}
+	log.Address = common.HexToAddress(common.BlockSigners)
+	log.BlockNumber = header.Number.Uint64()
+	statedb.AddLog(log)
+	receipt.Logs = statedb.GetLogs(tx.Hash())
+	receipt.Bloom = types.CreateBloom(types.Receipts{receipt})
+	return receipt, 0, nil
 }
 
 func InitSignerInTransactions(config *params.ChainConfig, header *types.Header, txs types.Transactions) {
