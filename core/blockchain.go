@@ -131,7 +131,6 @@ type BlockChain struct {
 	blockCache       *lru.Cache     // Cache for the most recent entire blocks
 	futureBlocks     *lru.Cache     // future blocks are blocks added for later processing
 	resultProcess    *lru.Cache     // Cache for processed blocks
-	calculatingBlock *lru.Cache     // Cache for processing blocks
 	downloadingBlock *lru.Cache     // Cache for downloading blocks (avoid duplication from fetcher)
 	quit             chan struct{}  // blockchain quit channel
 	running          int32          // running must be called atomically
@@ -170,7 +169,6 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 	futureBlocks, _ := lru.New(maxFutureBlocks)
 	badBlocks, _ := lru.New(badBlockLimit)
 	resultProcess, _ := lru.New(blockCacheLimit)
-	preparingBlock, _ := lru.New(blockCacheLimit)
 	downloadingBlock, _ := lru.New(blockCacheLimit)
 	bc := &BlockChain{
 		chainConfig:      chainConfig,
@@ -184,7 +182,6 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 		blockCache:       blockCache,
 		futureBlocks:     futureBlocks,
 		resultProcess:    resultProcess,
-		calculatingBlock: preparingBlock,
 		downloadingBlock: downloadingBlock,
 		engine:           engine,
 		vmConfig:         vmConfig,
@@ -1230,22 +1227,6 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []interface{}, []*ty
 		if err != nil {
 			return i, events, coalescedLogs, err
 		}
-		if bc.chainConfig.Posv != nil {
-			c := bc.engine.(*posv.Posv)
-			coinbase := c.Signer()
-			// ignore synching block
-			if coinbase != common.HexToAddress("0x0000000000000000000000000000000000000000") {
-				// block signer
-				blockSigner, _ := c.RecoverSigner(block.Header())
-				header := block.Header()
-				validator, _ := c.RecoverValidator(block.Header())
-				ok := c.CheckMNTurn(bc, header, coinbase)
-				// if created block was your turn
-				if blockSigner != coinbase && ok {
-					log.Warn("Missed create block height", "number", block.Number(), "hash", block.Hash(), "m1", blockSigner.Hex(), "m2", validator.Hex())
-				}
-			}
-		}
 		switch status {
 		case CanonStatTy:
 			log.Debug("Inserted new block from downloader", "number", block.Number(), "hash", block.Hash(), "uncles", len(block.Uncles()),
@@ -1299,46 +1280,29 @@ func (bc *BlockChain) InsertBlock(block *types.Block) error {
 }
 
 func (bc *BlockChain) PrepareBlock(block *types.Block) (err error) {
-	defer log.Debug("Done prepare block ", "number", block.NumberU64(), "hash", block.Hash(), "validator", block.Header().Validator, "err", err)
+	defer log.Debug("Done prepare block ", "number", block.NumberU64(), "hash", block.Hash(), "err", err)
 	if _, check := bc.resultProcess.Get(block.Hash()); check {
-		log.Debug("Stop prepare a block because the result cached", "number", block.NumberU64(), "hash", block.Hash(), "validator", block.Header().Validator)
-		return nil
-	}
-	if _, check := bc.calculatingBlock.Get(block.Hash()); check {
-		log.Debug("Stop prepare a block because inserting", "number", block.NumberU64(), "hash", block.Hash(), "validator", block.Header().Validator)
+		log.Debug("Stop prepare a block because the result cached", "number", block.NumberU64(), "hash", block.Hash())
 		return nil
 	}
 	err = bc.engine.VerifyHeader(bc, block.Header(), false)
 	if err != nil {
 		return err
 	}
-	result, err := bc.getResultBlock(block, false)
+	result, err := bc.getResultBlock(block)
 	if err == nil {
 		bc.resultProcess.Add(block.Hash(), result)
 		return nil
 	} else if err == ErrKnownBlock {
 		return nil
 	} else if err == ErrStopPreparingBlock {
-		log.Debug("Stop prepare a block because calculating", "number", block.NumberU64(), "hash", block.Hash(), "validator", block.Header().Validator)
+		log.Debug("Stop prepare a block because calculating", "number", block.NumberU64(), "hash", block.Hash())
 		return nil
 	}
 	return err
 }
 
-func (bc *BlockChain) getResultBlock(block *types.Block, verifiedM2 bool) (*ResultProcessBlock, error) {
-	var calculatedBlock *CalculatedBlock
-	if verifiedM2 {
-		if result, check := bc.resultProcess.Get(block.HashNoValidator()); check {
-			log.Debug("Get result block from cache ", "number", block.NumberU64(), "hash", block.Hash(), "hash no validator", block.HashNoValidator())
-			return result.(*ResultProcessBlock), nil
-		}
-		log.Debug("Not found cache prepare block ", "number", block.NumberU64(), "hash", block.Hash(), "validator", block.HashNoValidator())
-		if calculatedBlock, _ := bc.calculatingBlock.Get(block.HashNoValidator()); calculatedBlock != nil {
-			calculatedBlock.(*CalculatedBlock).stop = true
-		}
-	}
-	calculatedBlock = &CalculatedBlock{block, false}
-	bc.calculatingBlock.Add(block.HashNoValidator(), calculatedBlock)
+func (bc *BlockChain) getResultBlock(block *types.Block) (*ResultProcessBlock, error) {
 	// Start the parallel header verifier
 	// If the chain is terminating, stop processing blocks
 	if atomic.LoadInt32(&bc.procInterrupt) == 1 {
@@ -1399,7 +1363,7 @@ func (bc *BlockChain) getResultBlock(block *types.Block, verifiedM2 bool) (*Resu
 	}
 
 	// Process block using the parent state as reference point.
-	receipts, logs, usedGas, err := bc.processor.ProcessBlockNoValidator(calculatedBlock, statedb, bc.vmConfig)
+	receipts, logs, usedGas, err := bc.processor.Process(block, statedb, bc.vmConfig)
 	process := time.Since(bstart)
 	if err != nil {
 		if err != ErrStopPreparingBlock {
@@ -1453,11 +1417,11 @@ func (bc *BlockChain) insertBlock(block *types.Block) ([]interface{}, []*types.L
 		log.Debug("Stop fetcher a block because downloading", "number", block.NumberU64(), "hash", block.Hash())
 		return events, coalescedLogs, nil
 	}
-	result, err := bc.getResultBlock(block, true)
+	result, err := bc.getResultBlock(block)
 	if err != nil {
 		return events, coalescedLogs, err
 	}
-	defer bc.resultProcess.Remove(block.HashNoValidator())
+	defer bc.resultProcess.Remove(block.Hash())
 	bc.wg.Add(1)
 	defer bc.wg.Done()
 	// Write the block to the chain and get the status.
@@ -1470,22 +1434,6 @@ func (bc *BlockChain) insertBlock(block *types.Block) ([]interface{}, []*types.L
 
 	if err != nil {
 		return events, coalescedLogs, err
-	}
-	if bc.chainConfig.Posv != nil {
-		c := bc.engine.(*posv.Posv)
-		coinbase := c.Signer()
-		// ignore synching block
-		if coinbase != common.HexToAddress("0x0000000000000000000000000000000000000000") {
-			header := block.Header()
-			// block signer
-			blockSigner, _ := c.RecoverSigner(block.Header())
-			validator, _ := c.RecoverValidator(block.Header())
-			ok := c.CheckMNTurn(bc, header, coinbase)
-			// if created block was your turn
-			if blockSigner != coinbase && ok {
-				log.Warn("Missed create block height", "number", block.Number(), "hash", block.Hash(), "m1", blockSigner.Hex(), "m2", validator.Hex())
-			}
-		}
 	}
 	switch status {
 	case CanonStatTy:

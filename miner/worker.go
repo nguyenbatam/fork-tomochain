@@ -21,7 +21,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math/big"
-	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -330,10 +329,6 @@ func (self *worker) wait() {
 				continue
 			}
 			block := result.Block
-			if self.config.Posv != nil && block.NumberU64() >= self.config.Posv.Epoch && len(block.Validator()) == 0 {
-				self.mux.Post(core.NewMinedBlockEvent{Block: block})
-				continue
-			}
 			work := result.Work
 
 			// Update the block hash in all logs since it is now available and not when the
@@ -376,7 +371,7 @@ func (self *worker) wait() {
 					err := self.chain.UpdateM1()
 					if err != nil {
 						log.Error("Error when update masternodes set. Stopping node", "err", err)
-						os.Exit(1)
+						return
 					}
 				}
 			}

@@ -33,7 +33,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/consensus/posv"
 	"github.com/ethereum/go-ethereum/contracts/blocksigner/contract"
@@ -274,16 +273,6 @@ func BuildValidatorFromM2(listM2 []int64) []byte {
 	}
 
 	return validatorBytes
-}
-
-// Decode validator hex string.
-func DecodeValidatorsHexData(validatorsStr string) ([]int64, error) {
-	validatorsByte, err := hexutil.Decode(validatorsStr)
-	if err != nil {
-		return nil, err
-	}
-
-	return posv.ExtractValidatorsFromBytes(validatorsByte), nil
 }
 
 // Decrypt randomize from secrets and opening.

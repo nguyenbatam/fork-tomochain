@@ -213,15 +213,6 @@ func (s *LesApiBackend) GetRewardByHash(hash common.Hash) map[string]interface{}
 			if err == nil {
 				return rewards
 			}
-		} else {
-			data, err = ioutil.ReadFile(filepath.Join(common.StoreRewardFolder, header.Number.String()+"."+header.HashNoValidator().Hex()))
-			if err == nil {
-				rewards := make(map[string]interface{})
-				err = json.Unmarshal(data, &rewards)
-				if err == nil {
-					return rewards
-				}
-			}
 		}
 	}
 	return make(map[string]interface{})
