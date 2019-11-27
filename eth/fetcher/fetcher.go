@@ -147,7 +147,6 @@ type Fetcher struct {
 	fetchingHook       func([]common.Hash)     // Method to call upon starting a block (eth/61) or header (eth/62) fetch
 	completingHook     func([]common.Hash)     // Method to call upon starting a block body fetch (eth/62)
 	signHook           func(*types.Block) error
-	appendM2HeaderHook func(*types.Block) (*types.Block, bool, error)
 }
 
 // New creates a block fetcher to retrieve blocks based on hash announcements.
@@ -677,32 +676,6 @@ func (f *Fetcher) insert(peer string, block *types.Block) {
 			log.Info("Receive future block", "number", block.NumberU64(), "hash", block.Hash().Hex(), "delay", delay)
 			time.Sleep(delay)
 			goto again
-		case consensus.ErrNoValidatorSignature:
-			newBlock := block
-			var errM2 error
-			isM2 := false
-			if f.appendM2HeaderHook != nil {
-				if newBlock, isM2, errM2 = f.appendM2HeaderHook(block); errM2 != nil {
-					log.Error("Append m2 to block header fail", "err", errM2)
-					return
-				}
-			}
-			if !isM2 {
-				go f.broadcastBlock(block, true)
-				if err := f.prepareBlock(block); err != nil {
-					log.Debug("Propagated block prepare failed", "peer", peer, "number", block.Number(), "hash", hash, "err", err)
-					return
-				}
-				return
-			}
-			log.Debug("Append M2 to header block", "numer", block.NumberU64(), "hahs", block.Hash())
-			if err := f.prepareBlock(block); err != nil {
-				log.Debug("Propagated block prepare failed", "peer", peer, "number", block.Number(), "hash", hash, "err", err)
-				return
-			}
-			block = newBlock
-			fastBroadCast = false
-			goto again
 		default:
 			// Something went very wrong, drop the peer
 			log.Debug("Propagated block verification failed", "peer", peer, "number", block.Number(), "hash", hash, "err", err)
@@ -786,9 +759,4 @@ func (f *Fetcher) forgetBlock(hash common.Hash) {
 // Bind double validate hook before block imported into chain.
 func (f *Fetcher) SetSignHook(signHook func(*types.Block) error) {
 	f.signHook = signHook
-}
-
-// Bind append m2 to block header hook when imported into chain.
-func (f *Fetcher) SetAppendM2HeaderHook(appendM2HeaderHook func(*types.Block) (*types.Block, bool, error)) {
-	f.appendM2HeaderHook = appendM2HeaderHook
 }

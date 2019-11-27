@@ -20,14 +20,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"math/big"
 	"math/rand"
 	"path/filepath"
 	"reflect"
 	"sort"
-	"strconv"
 	"sync"
 	"time"
 
@@ -137,8 +135,6 @@ var (
 	// errUnauthorized is returned if a header is signed by a non-authorized entity.
 	errUnauthorized = errors.New("unauthorized")
 
-	errFailedDoubleValidation = errors.New("wrong pair of creator-validator in double validation")
-
 	// errWaitTransactions is returned if an empty block is attempted to be sealed
 	// on an instant chain (0 second period). It's important to refuse these as the
 	// block reward is zero, so an empty block just bloats the chain... fast.
@@ -217,11 +213,10 @@ type Posv struct {
 	config *params.PosvConfig // Consensus engine configuration parameters
 	db     ethdb.Database     // Database to store and retrieve snapshot checkpoints
 
-	recents             *lru.ARCCache // Snapshots for recent block to speed up reorgs
-	signatures          *lru.ARCCache // Signatures of recent blocks to speed up mining
-	validatorSignatures *lru.ARCCache // Signatures of recent blocks to speed up mining
-	verifiedHeaders     *lru.ARCCache
-	proposals           map[common.Address]bool // Current list of proposals we are pushing
+	recents         *lru.ARCCache // Snapshots for recent block to speed up reorgs
+	signatures      *lru.ARCCache // Signatures of recent blocks to speed up mining
+	verifiedHeaders *lru.ARCCache
+	proposals       map[common.Address]bool // Current list of proposals we are pushing
 
 	signer common.Address  // Ethereum address of the signing key
 	signFn clique.SignerFn // Signer function to authorize hashes with
@@ -232,8 +227,6 @@ type Posv struct {
 	HookPenalty                func(chain consensus.ChainReader, blockNumberEpoc uint64) ([]common.Address, error)
 	HookGetSignersFromContract func(blockHash common.Hash) ([]common.Address, error)
 	HookPenaltyTIPSigning      func(chain consensus.ChainReader, header *types.Header, candidate []common.Address) ([]common.Address, error)
-	HookValidator              func(header *types.Header, signers []common.Address) ([]byte, error)
-	HookVerifyMNs              func(header *types.Header, signers []common.Address) error
 }
 
 // New creates a PoSV proof-of-stake-voting consensus engine with the initial
@@ -248,17 +241,15 @@ func New(config *params.PosvConfig, db ethdb.Database) *Posv {
 	BlockSigners, _ := lru.New(blockSignersCacheLimit)
 	recents, _ := lru.NewARC(inmemorySnapshots)
 	signatures, _ := lru.NewARC(inmemorySnapshots)
-	validatorSignatures, _ := lru.NewARC(inmemorySnapshots)
 	verifiedHeaders, _ := lru.NewARC(inmemorySnapshots)
 	return &Posv{
-		config:              &conf,
-		db:                  db,
-		BlockSigners:        BlockSigners,
-		recents:             recents,
-		signatures:          signatures,
-		verifiedHeaders:     verifiedHeaders,
-		validatorSignatures: validatorSignatures,
-		proposals:           make(map[common.Address]bool),
+		config:          &conf,
+		db:              db,
+		BlockSigners:    BlockSigners,
+		recents:         recents,
+		signatures:      signatures,
+		verifiedHeaders: verifiedHeaders,
+		proposals:       make(map[common.Address]bool),
 	}
 }
 
@@ -322,9 +313,6 @@ func (c *Posv) verifyHeader(chain consensus.ChainReader, header *types.Header, p
 	}
 	number := header.Number.Uint64()
 	if fullVerify {
-		if header.Number.Uint64() > c.config.Epoch && len(header.Validator) == 0 {
-			return consensus.ErrNoValidatorSignature
-		}
 		// Don't waste time checking blocks from the future
 		if header.Time.Cmp(big.NewInt(time.Now().Unix())) > 0 {
 			return consensus.ErrFutureBlock
@@ -472,13 +460,6 @@ func (c *Posv) checkSignersOnCheckpoint(chain consensus.ChainReader, header *typ
 		log.Error("Masternodes lists are different in checkpoint header and snapshot", "number", number, "masternodes_from_checkpoint_header", masternodesFromCheckpointHeader, "masternodes_in_snapshot", signers, "penList", penPenalties)
 		return errInvalidCheckpointSigners
 	}
-	if c.HookVerifyMNs != nil {
-		err := c.HookVerifyMNs(header, signers)
-		if err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -756,51 +737,7 @@ func (c *Posv) verifySeal(chain consensus.ChainReader, header *types.Header, par
 			}
 		}
 	}
-
-	// header must contain validator info following double validation design
-	// start checking from epoch 2nd.
-	if header.Number.Uint64() > c.config.Epoch && fullVerify {
-		validator, err := c.RecoverValidator(header)
-		if err != nil {
-			return err
-		}
-
-		// verify validator
-		assignedValidator, err := c.GetValidator(creator, chain, header)
-		if err != nil {
-			return err
-		}
-		if validator != assignedValidator {
-			log.Debug("Bad block detected. Header contains wrong pair of creator-validator", "creator", creator, "assigned validator", assignedValidator, "wrong validator", validator)
-			return errFailedDoubleValidation
-		}
-	}
 	return nil
-}
-
-func (c *Posv) GetValidator(creator common.Address, chain consensus.ChainReader, header *types.Header) (common.Address, error) {
-	epoch := c.config.Epoch
-	no := header.Number.Uint64()
-	cpNo := no
-	if no%epoch != 0 {
-		cpNo = no - (no % epoch)
-	}
-	if cpNo == 0 {
-		return common.Address{}, nil
-	}
-	cpHeader := chain.GetHeaderByNumber(cpNo)
-	if cpHeader == nil {
-		if no%epoch == 0 {
-			cpHeader = header
-		} else {
-			return common.Address{}, fmt.Errorf("couldn't find checkpoint header")
-		}
-	}
-	m, err := GetM1M2FromCheckpointHeader(cpHeader, header, chain.Config())
-	if err != nil {
-		return common.Address{}, err
-	}
-	return m[creator], nil
 }
 
 // Prepare implements consensus.Engine, preparing all the consensus fields of the
@@ -879,13 +816,6 @@ func (c *Posv) Prepare(chain consensus.ChainReader, header *types.Header) error 
 		}
 		for _, masternode := range masternodes {
 			header.Extra = append(header.Extra, masternode[:]...)
-		}
-		if c.HookValidator != nil {
-			validators, err := c.HookValidator(header, masternodes)
-			if err != nil {
-				return err
-			}
-			header.Validators = validators
 		}
 	}
 	header.Extra = append(header.Extra, make([]byte, extraSeal)...)
@@ -1034,13 +964,13 @@ func (c *Posv) Seal(chain consensus.ChainReader, block *types.Block, stop <-chan
 		return nil, err
 	}
 	copy(header.Extra[len(header.Extra)-extraSeal:], sighash)
-	m2, err := c.GetValidator(signer, chain, header)
-	if err != nil {
-		return nil, fmt.Errorf("can't get block validator: %v", err)
-	}
-	if m2 == signer {
-		header.Validator = sighash
-	}
+	//m2, err := c.GetValidator(signer, chain, header)
+	//if err != nil {
+	//	return nil, fmt.Errorf("can't get block validator: %v", err)
+	//}
+	//if m2 == signer {
+	//	header.Validator = sighash
+	//}
 	return block.WithSeal(header), nil
 }
 
@@ -1072,29 +1002,6 @@ func (c *Posv) APIs(chain consensus.ChainReader) []rpc.API {
 
 func (c *Posv) RecoverSigner(header *types.Header) (common.Address, error) {
 	return ecrecover(header, c.signatures)
-}
-
-func (c *Posv) RecoverValidator(header *types.Header) (common.Address, error) {
-	// If the signature's already cached, return that
-	hash := header.Hash()
-	if address, known := c.validatorSignatures.Get(hash); known {
-		return address.(common.Address), nil
-	}
-	// Retrieve the signature from the header.Validator
-	// len equals 65 bytes
-	if len(header.Validator) != extraSeal {
-		return common.Address{}, consensus.ErrFailValidatorSignature
-	}
-	// Recover the public key and the Ethereum address
-	pubkey, err := crypto.Ecrecover(sigHash(header).Bytes(), header.Validator)
-	if err != nil {
-		return common.Address{}, err
-	}
-	var signer common.Address
-	copy(signer[:], crypto.Keccak256(pubkey[1:])[12:])
-
-	c.validatorSignatures.Add(hash, signer)
-	return signer, nil
 }
 
 // Get master nodes over extra data of previous checkpoint block.
@@ -1179,59 +1086,6 @@ func GetMasternodesFromCheckpointHeader(checkpointHeader *types.Header) []common
 		copy(masternodes[i][:], checkpointHeader.Extra[extraVanity+i*common.AddressLength:])
 	}
 	return masternodes
-}
-
-// Get m2 list from checkpoint block.
-func GetM1M2FromCheckpointHeader(checkpointHeader *types.Header, currentHeader *types.Header, config *params.ChainConfig) (map[common.Address]common.Address, error) {
-	if checkpointHeader.Number.Uint64()%common.EpocBlockRandomize != 0 {
-		return nil, errors.New("This block is not checkpoint block epoc.")
-	}
-	// Get signers from this block.
-	masternodes := GetMasternodesFromCheckpointHeader(checkpointHeader)
-	validators := ExtractValidatorsFromBytes(checkpointHeader.Validators)
-	m1m2, _, err := getM1M2(masternodes, validators, currentHeader, config)
-	if err != nil {
-		return map[common.Address]common.Address{}, err
-	}
-	return m1m2, nil
-}
-
-func getM1M2(masternodes []common.Address, validators []int64, currentHeader *types.Header, config *params.ChainConfig) (map[common.Address]common.Address, uint64, error) {
-	m1m2 := map[common.Address]common.Address{}
-	maxMNs := len(masternodes)
-	moveM2 := uint64(0)
-	if len(validators) < maxMNs {
-		return nil, moveM2, errors.New("len(m2) is less than len(m1)")
-	}
-	if maxMNs > 0 {
-		isForked := config.IsTIPRandomize(currentHeader.Number)
-		if isForked {
-			moveM2 = ((currentHeader.Number.Uint64() % config.Posv.Epoch) / uint64(maxMNs)) % uint64(maxMNs)
-		}
-		for i, m1 := range masternodes {
-			m2Index := uint64(validators[i] % int64(maxMNs))
-			m2Index = (m2Index + moveM2) % uint64(maxMNs)
-			m1m2[m1] = masternodes[m2Index]
-		}
-	}
-	return m1m2, moveM2, nil
-}
-
-// Extract validators from byte array.
-func ExtractValidatorsFromBytes(byteValidators []byte) []int64 {
-	lenValidator := len(byteValidators) / M2ByteLength
-	var validators []int64
-	for i := 0; i < lenValidator; i++ {
-		trimByte := bytes.Trim(byteValidators[i*M2ByteLength:(i+1)*M2ByteLength], "\x00")
-		intNumber, err := strconv.Atoi(string(trimByte))
-		if err != nil {
-			log.Error("Can not convert string to integer", "error", err)
-			return []int64{}
-		}
-		validators = append(validators, int64(intNumber))
-	}
-
-	return validators
 }
 
 func Hop(len, pre, cur int) int {

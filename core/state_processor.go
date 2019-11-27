@@ -90,48 +90,6 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 	return receipts, allLogs, *usedGas, nil
 }
 
-func (p *StateProcessor) ProcessBlockNoValidator(cBlock *CalculatedBlock, statedb *state.StateDB, cfg vm.Config) (types.Receipts, []*types.Log, uint64, error) {
-	block := cBlock.block
-	var (
-		receipts types.Receipts
-		usedGas  = new(uint64)
-		header   = block.Header()
-		allLogs  []*types.Log
-		gp       = new(GasPool).AddGas(block.GasLimit())
-	)
-	// Mutate the the block and state according to any hard-fork specs
-	if p.config.DAOForkSupport && p.config.DAOForkBlock != nil && p.config.DAOForkBlock.Cmp(block.Number()) == 0 {
-		misc.ApplyDAOHardFork(statedb)
-	}
-	if common.TIPSigning.Cmp(header.Number) == 0 {
-		statedb.DeleteAddress(common.HexToAddress(common.BlockSigners))
-	}
-	if cBlock.stop {
-		return nil, nil, 0, ErrStopPreparingBlock
-	}
-	InitSignerInTransactions(p.config, header, block.Transactions())
-	if cBlock.stop {
-		return nil, nil, 0, ErrStopPreparingBlock
-	}
-	// Iterate over and process the individual transactions
-	receipts = make([]*types.Receipt, block.Transactions().Len())
-	for i, tx := range block.Transactions() {
-		statedb.Prepare(tx.Hash(), block.Hash(), i)
-		receipt, _, err := ApplyTransaction(p.config, p.bc, nil, gp, statedb, header, tx, usedGas, cfg)
-		if err != nil {
-			return nil, nil, 0, err
-		}
-		if cBlock.stop {
-			return nil, nil, 0, ErrStopPreparingBlock
-		}
-		receipts[i] = receipt
-		allLogs = append(allLogs, receipt.Logs...)
-	}
-	// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
-	p.engine.Finalize(p.bc, header, statedb, block.Transactions(), block.Uncles(), receipts)
-	return receipts, allLogs, *usedGas, nil
-}
-
 // ApplyTransaction attempts to apply a transaction to the given state database
 // and uses the input parameters for its environment. It returns the receipt
 // for the transaction, gas used and an error if the transaction failed,

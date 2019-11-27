@@ -1372,9 +1372,7 @@ func (s *PublicBlockChainAPI) getSigners(ctx context.Context, block *types.Block
 		log.Error("Fail to get signers from block signer SC.", "error", err)
 		return nil, err
 	}
-	validator, _ := engine.RecoverValidator(block.Header())
 	creator, _ := engine.RecoverSigner(block.Header())
-	signers = append(signers, validator)
 	signers = append(signers, creator)
 
 	for _, masternode := range masternodes {

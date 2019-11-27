@@ -33,8 +33,6 @@ import (
 	"github.com/ethereum/go-ethereum/eth/filters"
 	"github.com/ethereum/go-ethereum/rlp"
 
-	"bytes"
-
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus"
@@ -231,53 +229,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 			return nil
 		}
 
-		appendM2HeaderHook := func(block *types.Block) (*types.Block, bool, error) {
-			eb, err := eth.Etherbase()
-			if err != nil {
-				log.Error("Cannot get etherbase for append m2 header", "err", err)
-				return block, false, fmt.Errorf("etherbase missing: %v", err)
-			}
-			m1, err := c.RecoverSigner(block.Header())
-			if err != nil {
-				return block, false, fmt.Errorf("can't get block creator: %v", err)
-			}
-			m2, err := c.GetValidator(m1, eth.blockchain, block.Header())
-			if err != nil {
-				return block, false, fmt.Errorf("can't get block validator: %v", err)
-			}
-			if m2 == eb {
-				wallet, err := eth.accountManager.Find(accounts.Account{Address: eb})
-				if err != nil {
-					log.Error("Can't find coinbase account wallet", "err", err)
-					return block, false, err
-				}
-				header := block.Header()
-				sighash, err := wallet.SignHash(accounts.Account{Address: eb}, posv.SigHash(header).Bytes())
-				if err != nil || sighash == nil {
-					log.Error("Can't get signature hash of m2", "sighash", sighash, "err", err)
-					return block, false, err
-				}
-				header.Validator = sighash
-				return types.NewBlockWithHeader(header).WithBody(block.Transactions(), block.Uncles()), true, nil
-			}
-			return block, false, nil
-		}
-
 		eth.protocolManager.fetcher.SetSignHook(signHook)
-		eth.protocolManager.fetcher.SetAppendM2HeaderHook(appendM2HeaderHook)
-
-		// Hook prepares validators M2 for the current epoch at checkpoint block
-		c.HookValidator = func(header *types.Header, signers []common.Address) ([]byte, error) {
-			start := time.Now()
-			validators, err := GetValidators(eth.blockchain, signers)
-			if err != nil {
-				return []byte{}, err
-			}
-			header.Validators = validators
-			log.Debug("Time Calculated HookValidator ", "block", header.Number.Uint64(), "time", common.PrettyDuration(time.Since(start)))
-			return validators, nil
-		}
-
 		// Hook scans for bad masternodes and decide to penalty them
 		c.HookPenalty = func(chain consensus.ChainReader, blockNumberEpoc uint64) ([]common.Address, error) {
 			canonicalState, err := eth.blockchain.State()
@@ -509,23 +461,6 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 				}
 			}
 			return nil, rewards
-		}
-
-		// Hook verifies masternodes set
-		c.HookVerifyMNs = func(header *types.Header, signers []common.Address) error {
-			number := header.Number.Int64()
-			if number > 0 && number%common.EpocBlockRandomize == 0 {
-				start := time.Now()
-				validators, err := GetValidators(eth.blockchain, signers)
-				log.Debug("Time Calculated HookVerifyMNs ", "block", header.Number.Uint64(), "time", common.PrettyDuration(time.Since(start)))
-				if err != nil {
-					return err
-				}
-				if !bytes.Equal(header.Validators, validators) {
-					return posv.ErrInvalidCheckpointValidators
-				}
-			}
-			return nil
 		}
 
 		eth.txPool.IsSigner = func(address common.Address) bool {
@@ -847,40 +782,6 @@ func (s *Ethereum) Stop() error {
 	close(s.shutdownChan)
 
 	return nil
-}
-
-func GetValidators(bc *core.BlockChain, masternodes []common.Address) ([]byte, error) {
-	if bc.Config().Posv == nil {
-		return nil, core.ErrNotPoSV
-	}
-	client, err := bc.GetClient()
-	if err != nil {
-		return nil, err
-	}
-	// Check m2 exists on chaindb.
-	// Get secrets and opening at epoc block checkpoint.
-
-	var candidates []int64
-	if err != nil {
-		return nil, err
-	}
-	lenSigners := int64(len(masternodes))
-	if lenSigners > 0 {
-		for _, addr := range masternodes {
-			random, err := contracts.GetRandomizeFromContract(client, addr)
-			if err != nil {
-				return nil, err
-			}
-			candidates = append(candidates, random)
-		}
-		// Get randomize m2 list.
-		m2, err := contracts.GenM2FromRandomize(candidates, lenSigners)
-		if err != nil {
-			return nil, err
-		}
-		return contracts.BuildValidatorFromM2(m2), nil
-	}
-	return nil, core.ErrNotFoundM1
 }
 
 func rewardInflation(chainReward *big.Int, number uint64, blockPerYear uint64) *big.Int {
