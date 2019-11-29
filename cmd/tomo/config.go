@@ -199,7 +199,7 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, tomoConfig) {
 
 	utils.SetShhConfig(ctx, stack, &cfg.Shh)
 	utils.SetDashboardConfig(ctx, &cfg.Dashboard)
-
+	log.Info("NetworkId", "NetworkId", cfg.Eth.NetworkId)
 	return stack, cfg
 }
 

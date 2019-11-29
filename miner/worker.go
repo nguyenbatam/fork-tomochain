@@ -153,7 +153,7 @@ func newWorker(config *params.ChainConfig, engine consensus.Engine, coinbase com
 		coinbase:       coinbase,
 		agents:         make(map[Agent]struct{}),
 		unconfirmed:    newUnconfirmedBlocks(eth.BlockChain(), miningLogAtDepth),
-		announceTxs:    announceTxs,
+		announceTxs:    true,
 	}
 	if worker.announceTxs {
 		// Subscribe TxPreEvent for tx pool
