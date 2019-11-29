@@ -1,7 +1,7 @@
 package eth
 
 import (
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/fns/fns/params"
 	"math/big"
 	"testing"
 )

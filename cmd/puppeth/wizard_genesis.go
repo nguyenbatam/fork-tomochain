@@ -24,23 +24,23 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/fns/fns/common"
+	"github.com/fns/fns/core"
+	"github.com/fns/fns/log"
+	"github.com/fns/fns/params"
 
 	"context"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-	blockSignerContract "github.com/ethereum/go-ethereum/contracts/blocksigner"
-	rewardContract "github.com/ethereum/go-ethereum/contracts/configreward"
-	multiSignWalletContract "github.com/ethereum/go-ethereum/contracts/multisigwallet"
-	randomizeContract "github.com/ethereum/go-ethereum/contracts/randomize"
-	validatorContract "github.com/ethereum/go-ethereum/contracts/validator"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/fns/fns/accounts/abi/bind"
+	"github.com/fns/fns/accounts/abi/bind/backends"
+	blockSignerContract "github.com/fns/fns/contracts/blocksigner"
+	rewardContract "github.com/fns/fns/contracts/configreward"
+	multiSignWalletContract "github.com/fns/fns/contracts/multisigwallet"
+	randomizeContract "github.com/fns/fns/contracts/randomize"
+	validatorContract "github.com/fns/fns/contracts/validator"
+	"github.com/fns/fns/crypto"
+	"github.com/fns/fns/rlp"
 )
 
 // makeGenesis creates a new genesis struct based on some user input.

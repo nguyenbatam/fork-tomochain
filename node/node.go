@@ -26,13 +26,13 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/internal/debug"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/fns/fns/accounts"
+	"github.com/fns/fns/ethdb"
+	"github.com/fns/fns/event"
+	"github.com/fns/fns/internal/debug"
+	"github.com/fns/fns/log"
+	"github.com/fns/fns/p2p"
+	"github.com/fns/fns/rpc"
 	"github.com/prometheus/prometheus/util/flock"
 )
 

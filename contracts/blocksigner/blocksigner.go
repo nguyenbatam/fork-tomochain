@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Tomochain
+// Copyright (c) 2018 FNS
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -16,9 +16,9 @@
 package blocksigner
 
 import (
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/contracts/blocksigner/contract"
+	"github.com/fns/fns/accounts/abi/bind"
+	"github.com/fns/fns/common"
+	"github.com/fns/fns/contracts/blocksigner/contract"
 	"math/big"
 )
 

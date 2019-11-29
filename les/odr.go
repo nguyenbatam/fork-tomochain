@@ -19,10 +19,10 @@ package les
 import (
 	"context"
 
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/light"
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/fns/fns/core"
+	"github.com/fns/fns/ethdb"
+	"github.com/fns/fns/light"
+	"github.com/fns/fns/log"
 )
 
 // LesOdr implements light.OdrBackend

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Tomochain
+// Copyright (c) 2018 FNS
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -16,10 +16,10 @@
 package posv
 
 import (
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/fns/fns/common"
+	"github.com/fns/fns/consensus"
+	"github.com/fns/fns/core/types"
+	"github.com/fns/fns/rpc"
 )
 
 // API is a user facing RPC API to allow controlling the signer and voting

@@ -25,15 +25,15 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/fns/fns/common"
+	"github.com/fns/fns/common/hexutil"
+	"github.com/fns/fns/common/math"
+	"github.com/fns/fns/core/state"
+	"github.com/fns/fns/core/types"
+	"github.com/fns/fns/ethdb"
+	"github.com/fns/fns/log"
+	"github.com/fns/fns/params"
+	"github.com/fns/fns/rlp"
 )
 
 //go:generate gencodec -type Genesis -field-override genesisSpecMarshaling -out gen_genesis.go
@@ -211,7 +211,7 @@ func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 	case g != nil:
 		return g.Config
 	case ghash == params.MainnetGenesisHash:
-		return params.TomoMainnetChainConfig
+		return params.FNSMainnetChainConfig
 	case ghash == params.TestnetGenesisHash:
 		return params.TestnetChainConfig
 	default:
@@ -311,7 +311,7 @@ func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big
 // DefaultGenesisBlock returns the Ethereum main net genesis block.
 func DefaultGenesisBlock() *Genesis {
 	return &Genesis{
-		Config:     params.TomoMainnetChainConfig,
+		Config:     params.FNSMainnetChainConfig,
 		Nonce:      0,
 		ExtraData:  hexutil.MustDecode("0x000000000000000000000000000000000000000000000000000000000000000021292d56e2a8de3cc4672db039aaa27f9190b1f62da72c9c4792e2ba85e2b980af4c6aa9afa9f3df8c57cea3173e5a87b3a61d9d1fe6c0d462f5f9b30000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
 		GasLimit:   4700000,
@@ -386,6 +386,6 @@ func decodePrealloc(data string) GenesisAlloc {
 
 func DecodeMainnet() GenesisAlloc {
 	mainnetAlloc := GenesisAlloc{}
-	json.Unmarshal([]byte(tomoAllocData), &mainnetAlloc)
+	json.Unmarshal([]byte(fnsAllocData), &mainnetAlloc)
 	return mainnetAlloc
 }

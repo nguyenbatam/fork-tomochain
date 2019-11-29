@@ -19,8 +19,8 @@ package vm
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/fns/fns/common"
+	"github.com/fns/fns/common/math"
 )
 
 // calculates the memory size required for a step

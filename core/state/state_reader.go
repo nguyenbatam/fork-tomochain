@@ -1,8 +1,8 @@
 package state
 
 import (
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/fns/fns/common"
+	"github.com/fns/fns/crypto"
 	"math/big"
 )
 

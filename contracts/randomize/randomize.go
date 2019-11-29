@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Tomochain
+// Copyright (c) 2018 FNS
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -16,24 +16,24 @@
 package randomize
 
 import (
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/contracts/randomize/contract"
+	"github.com/fns/fns/accounts/abi/bind"
+	"github.com/fns/fns/common"
+	"github.com/fns/fns/contracts/randomize/contract"
 )
 
 type Randomize struct {
-	*contract.TomoRandomizeSession
+	*contract.FNSRandomizeSession
 	contractBackend bind.ContractBackend
 }
 
 func NewRandomize(transactOpts *bind.TransactOpts, contractAddr common.Address, contractBackend bind.ContractBackend) (*Randomize, error) {
-	randomize, err := contract.NewTomoRandomize(contractAddr, contractBackend)
+	randomize, err := contract.NewFNSRandomize(contractAddr, contractBackend)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Randomize{
-		&contract.TomoRandomizeSession{
+		&contract.FNSRandomizeSession{
 			Contract:     randomize,
 			TransactOpts: *transactOpts,
 		},
@@ -42,7 +42,7 @@ func NewRandomize(transactOpts *bind.TransactOpts, contractAddr common.Address, 
 }
 
 func DeployRandomize(transactOpts *bind.TransactOpts, contractBackend bind.ContractBackend) (common.Address, *Randomize, error) {
-	randomizeAddr, _, _, err := contract.DeployTomoRandomize(transactOpts, contractBackend)
+	randomizeAddr, _, _, err := contract.DeployFNSRandomize(transactOpts, contractBackend)
 	if err != nil {
 		return randomizeAddr, nil, err
 	}
