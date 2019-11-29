@@ -28,15 +28,15 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/dashboard"
-	"github.com/ethereum/go-ethereum/eth"
-	"github.com/ethereum/go-ethereum/internal/debug"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/params"
-	whisper "github.com/ethereum/go-ethereum/whisper/whisperv6"
+	"github.com/fns/fns/cmd/utils"
+	"github.com/fns/fns/common"
+	"github.com/fns/fns/dashboard"
+	"github.com/fns/fns/eth"
+	"github.com/fns/fns/internal/debug"
+	"github.com/fns/fns/log"
+	"github.com/fns/fns/node"
+	"github.com/fns/fns/params"
+	whisper "github.com/fns/fns/whisper/whisperv6"
 	"github.com/naoina/toml"
 )
 
@@ -88,7 +88,7 @@ type Bootnodes struct {
 	Testnet []string
 }
 
-type tomoConfig struct {
+type fnsConfig struct {
 	Eth         eth.Config
 	Shh         whisper.Config
 	Node        node.Config
@@ -101,7 +101,7 @@ type tomoConfig struct {
 	NAT         string
 }
 
-func loadConfig(file string, cfg *tomoConfig) error {
+func loadConfig(file string, cfg *fnsConfig) error {
 	f, err := os.Open(file)
 	if err != nil {
 		return err
@@ -125,9 +125,9 @@ func defaultNodeConfig() node.Config {
 	return cfg
 }
 
-func makeConfigNode(ctx *cli.Context) (*node.Node, tomoConfig) {
+func makeConfigNode(ctx *cli.Context) (*node.Node, fnsConfig) {
 	// Load defaults.
-	cfg := tomoConfig{
+	cfg := fnsConfig{
 		Eth:         eth.DefaultConfig,
 		Shh:         whisper.DefaultConfig,
 		Node:        defaultNodeConfig(),
@@ -154,7 +154,7 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, tomoConfig) {
 	}
 
 	// Check testnet is enable.
-	if ctx.GlobalBool(utils.TomoTestnetFlag.Name) {
+	if ctx.GlobalBool(utils.FnsTestnetFlag.Name) {
 		common.IsTestnet = true
 		cfg.Eth.NetworkId = 89
 	}
@@ -226,7 +226,7 @@ func enableWhisper(ctx *cli.Context) bool {
 	return false
 }
 
-func makeFullNode(ctx *cli.Context) (*node.Node, tomoConfig) {
+func makeFullNode(ctx *cli.Context) (*node.Node, fnsConfig) {
 	stack, cfg := makeConfigNode(ctx)
 
 	utils.RegisterEthService(stack, &cfg.Eth)
