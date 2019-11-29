@@ -1,11 +1,11 @@
 package configreward
 
 import (
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/fns/fns/accounts/abi/bind"
+	"github.com/fns/fns/accounts/abi/bind/backends"
+	"github.com/fns/fns/common"
+	"github.com/fns/fns/core"
+	"github.com/fns/fns/crypto"
 	"math/big"
 	"testing"
 )

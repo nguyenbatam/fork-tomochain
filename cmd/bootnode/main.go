@@ -24,13 +24,13 @@ import (
 	"net"
 	"os"
 
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/p2p/discover"
-	"github.com/ethereum/go-ethereum/p2p/discv5"
-	"github.com/ethereum/go-ethereum/p2p/nat"
-	"github.com/ethereum/go-ethereum/p2p/netutil"
+	"github.com/fns/fns/cmd/utils"
+	"github.com/fns/fns/crypto"
+	"github.com/fns/fns/log"
+	"github.com/fns/fns/p2p/discover"
+	"github.com/fns/fns/p2p/discv5"
+	"github.com/fns/fns/p2p/nat"
+	"github.com/fns/fns/p2p/netutil"
 )
 
 func main() {

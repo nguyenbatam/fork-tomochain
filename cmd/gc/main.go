@@ -10,21 +10,21 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/eth"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/trie"
+	"github.com/fns/fns/cmd/utils"
+	"github.com/fns/fns/common"
+	"github.com/fns/fns/core"
+	"github.com/fns/fns/core/state"
+	"github.com/fns/fns/eth"
+	"github.com/fns/fns/ethdb"
+	"github.com/fns/fns/rlp"
+	"github.com/fns/fns/trie"
 	"github.com/hashicorp/golang-lru"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 var (
-	dir          = flag.String("dir", "", "directory to TomoChain chaindata")
+	dir          = flag.String("dir", "", "directory to FNS chaindata")
 	cacheSize    = flag.Int("size", 1000000, "LRU cache size")
 	sercureKey   = []byte("secure-key-")
 	nWorker      = runtime.NumCPU() / 2

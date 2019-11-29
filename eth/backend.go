@@ -27,36 +27,36 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/eth/filters"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/fns/fns/accounts/abi/bind"
+	"github.com/fns/fns/common/hexutil"
+	"github.com/fns/fns/core/state"
+	"github.com/fns/fns/eth/filters"
+	"github.com/fns/fns/rlp"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/consensus/posv"
-	"github.com/ethereum/go-ethereum/contracts"
-	contractValidator "github.com/ethereum/go-ethereum/contracts/validator/contract"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/bloombits"
+	"github.com/fns/fns/accounts"
+	"github.com/fns/fns/common"
+	"github.com/fns/fns/consensus"
+	"github.com/fns/fns/consensus/ethash"
+	"github.com/fns/fns/consensus/posv"
+	"github.com/fns/fns/contracts"
+	contractValidator "github.com/fns/fns/contracts/validator/contract"
+	"github.com/fns/fns/core"
+	"github.com/fns/fns/core/bloombits"
 
-	//"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/eth/downloader"
-	"github.com/ethereum/go-ethereum/eth/gasprice"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/miner"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rpc"
+	//"github.com/fns/fns/core/state"
+	"github.com/fns/fns/core/types"
+	"github.com/fns/fns/core/vm"
+	"github.com/fns/fns/eth/downloader"
+	"github.com/fns/fns/eth/gasprice"
+	"github.com/fns/fns/ethdb"
+	"github.com/fns/fns/event"
+	"github.com/fns/fns/internal/ethapi"
+	"github.com/fns/fns/log"
+	"github.com/fns/fns/miner"
+	"github.com/fns/fns/node"
+	"github.com/fns/fns/p2p"
+	"github.com/fns/fns/params"
+	"github.com/fns/fns/rpc"
 )
 
 type LesServer interface {
@@ -395,7 +395,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 				return nil, err
 			}
 			addr := common.HexToAddress(common.MasternodeVotingSMC)
-			validator, err := contractValidator.NewTomoValidator(addr, client)
+			validator, err := contractValidator.NewFNSValidator(addr, client)
 			if err != nil {
 				return nil, err
 			}
@@ -492,7 +492,7 @@ func makeExtraData(extra []byte) []byte {
 		// create default extradata
 		extra, _ = rlp.EncodeToBytes([]interface{}{
 			uint(params.VersionMajor<<16 | params.VersionMinor<<8 | params.VersionPatch),
-			"tomo",
+			"fns",
 			runtime.Version(),
 			runtime.GOOS,
 		})

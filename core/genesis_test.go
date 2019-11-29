@@ -22,17 +22,17 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/fns/fns/common"
+	"github.com/fns/fns/consensus/ethash"
+	"github.com/fns/fns/core/vm"
+	"github.com/fns/fns/ethdb"
+	"github.com/fns/fns/params"
 )
 
 func TestDefaultGenesisBlock(t *testing.T) {
 	block := DefaultGenesisBlock().ToBlock(nil)
-	if block.Hash() != params.TomoMainnetGenesisHash {
-		t.Errorf("wrong mainnet genesis hash, got %v, want %v", block.Hash().String(), params.TomoMainnetGenesisHash.String())
+	if block.Hash() != params.FNSMainnetGenesisHash {
+		t.Errorf("wrong mainnet genesis hash, got %v, want %v", block.Hash().String(), params.FNSMainnetGenesisHash.String())
 	}
 	block = DefaultTestnetGenesisBlock().ToBlock(nil)
 	if block.Hash() != params.TestnetGenesisHash {
@@ -72,8 +72,8 @@ func TestSetupGenesis(t *testing.T) {
 			fn: func(db ethdb.Database) (*params.ChainConfig, common.Hash, error) {
 				return SetupGenesisBlock(db, nil)
 			},
-			wantHash:   params.TomoMainnetGenesisHash,
-			wantConfig: params.TomoMainnetChainConfig,
+			wantHash:   params.FNSMainnetGenesisHash,
+			wantConfig: params.FNSMainnetChainConfig,
 		},
 		{
 			name: "mainnet block in DB, genesis == nil",
@@ -81,8 +81,8 @@ func TestSetupGenesis(t *testing.T) {
 				DefaultGenesisBlock().MustCommit(db)
 				return SetupGenesisBlock(db, nil)
 			},
-			wantHash:   params.TomoMainnetGenesisHash,
-			wantConfig: params.TomoMainnetChainConfig,
+			wantHash:   params.FNSMainnetGenesisHash,
+			wantConfig: params.FNSMainnetChainConfig,
 		},
 		{
 			name: "custom block in DB, genesis == nil",

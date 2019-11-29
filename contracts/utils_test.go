@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Tomochain
+// Copyright (c) 2018 FNS
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -19,14 +19,13 @@ import (
 	"bytes"
 	"context"
 	"crypto/ecdsa"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/posv"
-	"github.com/ethereum/go-ethereum/contracts/blocksigner"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/fns/fns/accounts/abi/bind"
+	"github.com/fns/fns/accounts/abi/bind/backends"
+	"github.com/fns/fns/common"
+	"github.com/fns/fns/contracts/blocksigner"
+	"github.com/fns/fns/core"
+	"github.com/fns/fns/core/types"
+	"github.com/fns/fns/crypto"
 	"math/big"
 	"math/rand"
 	"testing"
@@ -184,28 +183,4 @@ func TestGenM2FromRandomize(t *testing.T) {
 			t.Errorf("Error check Permutation Without Fixed-point %v - %v - %v", i, b[i], a)
 		}
 	}
-}
-
-// Unit test for validator m2.
-func TestBuildValidatorFromM2(t *testing.T) {
-	a := []int64{84, 58, 27, 96, 127, 60, 136, 20, 121, 31, 87, 85, 40, 120, 149, 109, 141, 145, 11, 110, 147, 35, 76, 46, 34, 108, 72, 103, 102, 12, 23, 47, 70, 86, 125, 112, 128, 13, 130, 98, 126, 62, 132, 111, 134, 6, 106, 67, 24, 91, 101, 50, 94, 43, 77, 73, 129, 71, 51, 10, 92, 29, 80, 95, 33, 100, 124, 75, 38, 133, 79, 83, 61, 36, 122, 99, 16, 28, 18, 116, 140, 97, 119, 82, 148, 48, 56, 32, 93, 107, 69, 68, 123, 81, 22, 137, 25, 115, 44, 8, 42, 131, 143, 17, 55, 89, 9, 15, 19, 59, 146, 54, 5, 30, 41, 144, 117, 1, 104, 49, 105, 45, 88, 78, 74, 135, 0, 21, 57, 3, 66, 52, 63, 138, 4, 114, 37, 118, 14, 2, 26, 7, 65, 139, 39, 64, 90, 142, 53, 113}
-	b := BuildValidatorFromM2(a)
-	c := posv.ExtractValidatorsFromBytes(b)
-	if !isArrayEqual([][]int64{a}, [][]int64{c}) {
-		t.Errorf("Fail to get m2 result %v", b)
-	}
-}
-
-// Unit test for decode validator string data.
-func TestDecodeValidatorsHexData(t *testing.T) {
-	a := "0x000000310000003000000032000000310000003000000032000000310000003000000032000000310000003000000031000000320000003000000031000000320000003000000031000000320000003000000030000000310000003200000030000000310000003200000030000000310000003200000030000000300000003100000032000000300000003100000032000000300000003100000032000000300000003200000030000000310000003200000030000000310000003200000030000000310000003000000030"
-	b, err := DecodeValidatorsHexData(a)
-	if err != nil {
-		t.Error("Fail to decode validator from hex string", err)
-	}
-	c := []int64{1, 0, 2, 1, 0, 2, 1, 0, 2, 1, 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 2, 0, 1, 2, 0, 1, 2, 0, 1, 0, 0}
-	if !isArrayEqual([][]int64{b}, [][]int64{c}) {
-		t.Errorf("Fail to get m2 result %v", b)
-	}
-	t.Log("b", b)
 }

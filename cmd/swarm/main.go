@@ -28,22 +28,22 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/console"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/internal/debug"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/discover"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/swarm"
-	bzzapi "github.com/ethereum/go-ethereum/swarm/api"
-	swarmmetrics "github.com/ethereum/go-ethereum/swarm/metrics"
+	"github.com/fns/fns/accounts"
+	"github.com/fns/fns/accounts/keystore"
+	"github.com/fns/fns/cmd/utils"
+	"github.com/fns/fns/common"
+	"github.com/fns/fns/console"
+	"github.com/fns/fns/crypto"
+	"github.com/fns/fns/ethclient"
+	"github.com/fns/fns/internal/debug"
+	"github.com/fns/fns/log"
+	"github.com/fns/fns/node"
+	"github.com/fns/fns/p2p"
+	"github.com/fns/fns/p2p/discover"
+	"github.com/fns/fns/params"
+	"github.com/fns/fns/swarm"
+	bzzapi "github.com/fns/fns/swarm/api"
+	swarmmetrics "github.com/fns/fns/swarm/metrics"
 
 	"gopkg.in/urfave/cli.v1"
 )
@@ -405,9 +405,9 @@ func bzzd(ctx *cli.Context) error {
 	}
 
 	cfg := defaultNodeConfig
-	//tomo only supports --datadir via command line
+	//fns only supports --datadir via command line
 	//in order to be consistent within swarm, if we pass --datadir via environment variable
-	//or via config file, we get the same directory for tomo and swarm
+	//or via config file, we get the same directory for FNS and swarm
 	if _, err := os.Stat(bzzconfig.Path); err == nil {
 		cfg.DataDir = bzzconfig.Path
 	}

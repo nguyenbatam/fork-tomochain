@@ -20,9 +20,9 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/trie"
+	"github.com/fns/fns/common"
+	"github.com/fns/fns/rlp"
+	"github.com/fns/fns/trie"
 )
 
 // NodeIterator is an iterator to traverse the entire state trie post-order,

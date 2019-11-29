@@ -23,9 +23,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/fns/fns/common"
+	"github.com/fns/fns/core/types"
+	"github.com/fns/fns/ethdb"
 )
 
 // Runs multiple tests with randomized parameters.

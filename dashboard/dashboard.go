@@ -33,11 +33,11 @@ import (
 	"time"
 
 	"github.com/elastic/gosigar"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/fns/fns/log"
+	"github.com/fns/fns/metrics"
+	"github.com/fns/fns/p2p"
+	"github.com/fns/fns/params"
+	"github.com/fns/fns/rpc"
 	"golang.org/x/net/websocket"
 )
 

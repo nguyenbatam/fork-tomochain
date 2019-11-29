@@ -2,13 +2,13 @@ pragma solidity ^0.4.21;
 
 import "./libs/SafeMath.sol";
 
-contract TomoRandomize {
+contract FNSRandomize {
     using SafeMath for uint256;
 
     mapping (address=>bytes32[]) randomSecret;
     mapping (address=>bytes32) randomOpening;
 
-    function TomoRandomize () public {
+    function FNSRandomize () public {
     }
 
     function setSecret(bytes32[] _secret) public {

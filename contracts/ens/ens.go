@@ -23,11 +23,11 @@ package ens
 import (
 	"strings"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/contracts/ens/contract"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/fns/fns/accounts/abi/bind"
+	"github.com/fns/fns/common"
+	"github.com/fns/fns/contracts/ens/contract"
+	"github.com/fns/fns/core/types"
+	"github.com/fns/fns/crypto"
 )
 
 var (

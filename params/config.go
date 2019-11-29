@@ -20,18 +20,18 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/fns/fns/common"
 )
 
 var (
-	TomoMainnetGenesisHash = common.HexToHash("642cccb003cebab8aee201f9eca36750cd7e09961f1a03684c2e8ac672bf7062") // Tomo Mainnet genesis hash to enforce below configs on
-	MainnetGenesisHash     = common.HexToHash("8d13370621558f4ed0da587934473c0404729f28b0ff1d50e5fdd840457a2f17") // Mainnet genesis hash to enforce below configs on
-	TestnetGenesisHash     = common.HexToHash("f4a46e64a071a931835daa12c840bfc9d3dd704e91aba9b98a2efd75ac46d6f4") // Testnet genesis hash to enforce below configs on
+	FNSMainnetGenesisHash = common.HexToHash("642cccb003cebab8aee201f9eca36750cd7e09961f1a03684c2e8ac672bf7062") // FNS Mainnet genesis hash to enforce below configs on
+	MainnetGenesisHash    = common.HexToHash("8d13370621558f4ed0da587934473c0404729f28b0ff1d50e5fdd840457a2f17") // Mainnet genesis hash to enforce below configs on
+	TestnetGenesisHash    = common.HexToHash("f4a46e64a071a931835daa12c840bfc9d3dd704e91aba9b98a2efd75ac46d6f4") // Testnet genesis hash to enforce below configs on
 )
 
 var (
-	// TomoChain mainnet config
-	TomoMainnetChainConfig = &ChainConfig{
+	// FNS mainnet config
+	FNSMainnetChainConfig = &ChainConfig{
 		ChainId:        big.NewInt(66),
 		HomesteadBlock: big.NewInt(1),
 		EIP150Block:    big.NewInt(2),

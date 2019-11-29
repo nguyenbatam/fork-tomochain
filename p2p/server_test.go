@@ -25,10 +25,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/crypto/sha3"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/p2p/discover"
+	"github.com/fns/fns/crypto"
+	"github.com/fns/fns/crypto/sha3"
+	"github.com/fns/fns/log"
+	"github.com/fns/fns/p2p/discover"
 )
 
 func init() {

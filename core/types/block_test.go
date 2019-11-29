@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"bytes"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/fns/fns/common"
+	"github.com/fns/fns/rlp"
 	"reflect"
 )
 

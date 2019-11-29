@@ -28,24 +28,24 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/mclock"
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/consensus/posv"
-	contractValidator "github.com/ethereum/go-ethereum/contracts/validator/contract"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/trie"
+	"github.com/fns/fns/accounts/abi/bind"
+	"github.com/fns/fns/common"
+	"github.com/fns/fns/common/mclock"
+	"github.com/fns/fns/consensus"
+	"github.com/fns/fns/consensus/posv"
+	contractValidator "github.com/fns/fns/contracts/validator/contract"
+	"github.com/fns/fns/core/state"
+	"github.com/fns/fns/core/types"
+	"github.com/fns/fns/core/vm"
+	"github.com/fns/fns/crypto"
+	"github.com/fns/fns/ethclient"
+	"github.com/fns/fns/ethdb"
+	"github.com/fns/fns/event"
+	"github.com/fns/fns/log"
+	"github.com/fns/fns/metrics"
+	"github.com/fns/fns/params"
+	"github.com/fns/fns/rlp"
+	"github.com/fns/fns/trie"
 	lru "github.com/hashicorp/golang-lru"
 	"gopkg.in/karalabe/cookiejar.v2/collections/prque"
 )
@@ -1877,7 +1877,7 @@ func (bc *BlockChain) UpdateM1() error {
 		return err
 	}
 	addr := common.HexToAddress(common.MasternodeVotingSMC)
-	validator, err := contractValidator.NewTomoValidator(addr, client)
+	validator, err := contractValidator.NewFNSValidator(addr, client)
 	if err != nil {
 		return err
 	}

@@ -21,10 +21,10 @@ import (
 	"math"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/fns/fns/common"
+	"github.com/fns/fns/core/vm"
+	"github.com/fns/fns/log"
+	"github.com/fns/fns/params"
 )
 
 var (
@@ -228,7 +228,7 @@ func (st *StateTransition) TransitionDb(owner common.Address) (ret []byte, usedG
 		vmerr error
 	)
 	// for debugging purpose
-	// TODO: clean it after fixing the issue https://github.com/tomochain/tomochain/issues/401
+	// TODO: clean it after fixing the issue https://github.com/FNS/FNS/issues/401
 	var contractAction string
 	nonce := uint64(1)
 	if contractCreation {

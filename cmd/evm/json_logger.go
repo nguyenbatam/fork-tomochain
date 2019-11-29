@@ -22,9 +22,9 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/fns/fns/common"
+	"github.com/fns/fns/common/math"
+	"github.com/fns/fns/core/vm"
 )
 
 type JSONLogger struct {
